@@ -1,0 +1,7 @@
+export const residents=[
+{id:'P1',name:'Megan-Cris Hendrix',phone:'5747108281',email:'',status:'Active',dob:'05/11/1992',diagnosis:'Generalized Anxiety Disorder'},
+{id:'P2',name:'Michael Monroe',phone:'520-979-5105',email:'michaeljmonroe74@hotmail.com',status:'Active',dob:'03/23/1988',diagnosis:'Major Depressive Disorder'},
+{id:'P3',name:'CRYSTLE HENDRICKS',phone:'602-684-5662',email:'hendrickscrystle3@gmail.com',status:'Active',dob:'08/14/1995',diagnosis:'PTSD'},
+{id:'P5',name:'Harrison Boy',phone:'928-349-9144',email:'',status:'Active',dob:'01/09/1990',diagnosis:'Substance Use Disorder'}
+];
+export const chartForms=['Shift Progress Note','Discharge Summary','Activities of Daily Living Tracking Form','Financial Transaction Record','ART Meeting','CFT Meeting','Authorization for Release of Information','Incident Report Form','Contact Note','BHP Progress Note','ASAM Criteria Checklist for Assessment','Discharge Planning','Re-Certification of Need (RON)','Initial Assessment','Nursing Assessment','Behavioral Health Treatment Plan','Face Sheet','Safety Plan','Resident Intakes','Mental Status','Refusal Of Medical Treatment Form','Appointment Tracking Log','Therapy Progress Notes','Clinical Oversight','Mileage Log','Resident Vitals','Resident Tracking','Resident Medication','Medication Administration Record','Medication Reconciliation','Medication Count','Informed Consent For Medications','PRN'];

@@ -1,0 +1,1 @@
+"use client";import {useRouter} from "next/navigation";export default function DeleteSubmission({id}:{id:string}){const r=useRouter();async function del(){if(!confirm('Delete this record?'))return;await fetch(`/api/submissions/${id}`,{method:'DELETE'});r.refresh()}return <button className="btn btn-danger" style={{padding:'7px 9px'}} onClick={del}>Delete</button>}

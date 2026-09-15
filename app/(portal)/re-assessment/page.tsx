@@ -1,0 +1,1 @@
+export default function Page(){return <><div className="pagehead"><div><h2>Re-Assessment</h2><div className="muted">Re-assessment forms can be managed from Resident Chart. Use the assessment category there for now.</div></div></div><div className="card empty">Re-assessment forms can be managed from Resident Chart. Use the assessment category there for now.</div></>}

@@ -1,0 +1,1 @@
+"use client";import {useRouter} from "next/navigation";export default function MarkNotifications(){const r=useRouter();return <button className="btn btn-ghost" onClick={async()=>{await fetch('/api/notifications',{method:'PUT'});r.refresh()}}>Mark all read</button>}

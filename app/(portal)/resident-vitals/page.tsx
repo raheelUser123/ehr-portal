@@ -1,0 +1,1 @@
+import VitalsManager from "@/components/VitalsManager";export default function Page(){return <VitalsManager/>}

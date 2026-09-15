@@ -1,0 +1,2 @@
+
+import {getFormDefinition} from "@/lib/form-definitions";import FormRenderer from "@/components/FormRenderer";import {notFound} from "next/navigation";export default async function Edit({params}:{params:Promise<{slug:string;id:string}>}){const {slug,id}=await params;const def=await getFormDefinition(slug);if(!def)notFound();return <><div className="pagehead"><div><h2>Edit {def.title}</h2><div className="muted">Update the saved record and submit changes.</div></div></div><FormRenderer definition={def} submissionId={id}/></>}

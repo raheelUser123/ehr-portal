@@ -1,0 +1,1 @@
+export default function Page(){return <><div className="pagehead"><div><h2>Settings</h2><div className="muted">Facility, user and system settings will expand with the Admin module.</div></div></div><div className="card empty">Facility, user and system settings will expand with the Admin module.</div></>}

@@ -1,0 +1,1 @@
+import FormBuilder from "@/components/FormBuilder";export default function Page(){return <><div className="pagehead"><div><h2>Create Resident Form</h2><div className="muted">Add a custom form template to Resident Chart. Submitted records automatically use the same CRUD workflow.</div></div></div><FormBuilder/></>}

@@ -1,0 +1,1 @@
+import ResidentManager from "@/components/ResidentManager";export default function Page(){return <ResidentManager/>}

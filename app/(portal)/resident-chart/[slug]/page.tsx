@@ -1,0 +1,3 @@
+
+import {getFormDefinition} from "@/lib/form-definitions";import FormRenderer from "@/components/FormRenderer";import {notFound} from "next/navigation";import Link from "next/link";
+export default async function Page({params}:{params:Promise<{slug:string}>}){const {slug}=await params;const def=await getFormDefinition(slug);if(!def)notFound();return <><div className="pagehead"><div><Link href="/resident-chart" className="muted">← Resident Chart</Link><h2 style={{marginTop:6}}>{def.title}</h2></div><Link className="btn btn-ghost" href={`/resident-chart/${slug}/records`}>View Records</Link></div><FormRenderer definition={def}/></>}

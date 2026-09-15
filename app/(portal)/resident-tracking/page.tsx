@@ -1,0 +1,1 @@
+import TrackingManager from "@/components/TrackingManager";export default function Page(){return <TrackingManager/>}
