@@ -10,63 +10,116 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => request.cookies.getAll(),
+        getAll() {
+          return request.cookies.getAll();
+        },
+
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
+
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
         },
       },
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const path = request.nextUrl.pathname;
 
-  const isPublic =
+  /*
+   * Recovery routes must remain accessible even after Supabase
+   * temporarily authenticates the user during password recovery.
+   */
+  const isRecoveryRoute =
+    path.startsWith("/auth/callback") ||
+    path.startsWith("/reset-password");
+
+  const isAuthEntryRoute =
     path.startsWith("/login") ||
     path.startsWith("/signup") ||
     path.startsWith("/forgot-password") ||
-    path.startsWith("/reset-password") ||
     path.startsWith("/verify") ||
-    path.startsWith("/verify-otp") ||
+    path.startsWith("/verify-otp");
+
+  const isPublic =
+    isRecoveryRoute ||
+    isAuthEntryRoute ||
     path.startsWith("/api/auth") ||
     path === "/sitemap.xml" ||
     path === "/robots.txt";
 
+  // Not logged in
   if (!user) {
-    if (!isPublic && !path.startsWith("/_next")) {
+    if (
+      !isPublic &&
+      !path.startsWith("/_next") &&
+      !path.startsWith("/favicon")
+    ) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
+
     return response;
   }
 
-  if (isPublic && !path.startsWith("/api/")) {
+  /*
+   * If already logged in, normal auth pages should send user
+   * to dashboard.
+   *
+   * IMPORTANT:
+   * Do NOT redirect /reset-password or /auth/callback.
+   */
+  if (user && isAuthEntryRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  const needed = capabilityForPath(path);
-  if (!needed) return response;
+  // Recovery route is allowed for the temporary recovery session.
+  if (isRecoveryRoute) {
+    return response;
+  }
 
-  // IMPORTANT: do not read profiles directly here. RLS can hide the profile
-  // from the session client and incorrectly downgrade a Super Admin to Staff.
-  // The SECURITY DEFINER RPC performs the permission check safely in Postgres.
-  const { data: allowed, error } = await supabase.rpc("has_capability", { cap: needed });
+  const needed = capabilityForPath(path);
+
+  if (!needed) {
+    return response;
+  }
+
+  /*
+   * Permission check.
+   * SECURITY DEFINER RPC avoids profile RLS incorrectly
+   * denying SUPER_ADMIN access.
+   */
+  const { data: allowed, error } = await supabase.rpc("has_capability", {
+    cap: needed,
+  });
 
   if (error) {
     console.error("Capability check failed:", error.message);
-    return NextResponse.redirect(new URL("/dashboard?access=denied", request.url));
+
+    return NextResponse.redirect(
+      new URL("/dashboard?access=denied", request.url)
+    );
   }
 
   if (!allowed) {
-    return NextResponse.redirect(new URL("/dashboard?access=denied", request.url));
+    return NextResponse.redirect(
+      new URL("/dashboard?access=denied", request.url)
+    );
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|favicon.png|sbh-logo.png).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|favicon.png|sbh-logo.png).*)",
+  ],
 };
