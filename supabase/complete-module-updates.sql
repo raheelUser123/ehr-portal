@@ -105,3 +105,6 @@ create policy "mileage logs read" on public.mileage_logs for select to authentic
 create policy "mileage logs insert" on public.mileage_logs for insert to authenticated with check (true);
 create policy "mileage logs update" on public.mileage_logs for update to authenticated using (true) with check (true);
 create policy "mileage logs delete" on public.mileage_logs for delete to authenticated using (true);
+
+
+-- EMPLOYEE MODULE: also run supabase/employee-module.sql

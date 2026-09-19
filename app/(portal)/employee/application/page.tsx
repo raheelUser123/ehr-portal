@@ -1,0 +1,1 @@
+import EmploymentApplicationForm from "@/components/EmploymentApplicationForm";export default function Page(){return <EmploymentApplicationForm/>}

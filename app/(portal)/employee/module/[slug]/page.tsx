@@ -1,0 +1,1 @@
+import {notFound} from "next/navigation";import EmployeeRecordManager from "@/components/EmployeeRecordManager";import {getEmployeeModule} from "@/lib/employee-modules";export default async function Page({params}:{params:Promise<{slug:string}>}){const {slug}=await params;const module=getEmployeeModule(slug);if(!module)notFound();return <EmployeeRecordManager module={module}/>}
