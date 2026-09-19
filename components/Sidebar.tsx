@@ -1,6 +1,54 @@
-"use client";import Link from "next/link";import {usePathname} from "next/navigation";import {LayoutDashboard,Users,ClipboardList,Activity,HeartPulse,RefreshCcw,Pill,Bell,Settings,FileText,PlusSquare,ShieldCheck,Building2,Hospital,UserCog,ScrollText,Route,NotebookPen,BriefcaseBusiness,IdCard,GraduationCap,CalendarClock,Clock3,ChartNoAxesCombined,Upload} from "lucide-react";
-const residentItems=[["/dashboard","Home",LayoutDashboard],["/therapy-progress-notes","Therapy Progress Notes",NotebookPen],["/mileage-log","Mileage Log",Route],["/residents","Resident List",Users],["/resident-chart","Resident Chart",ClipboardList],["/resident-vitals","Resident Vitals",HeartPulse],["/resident-tracking","Resident Tracking",Activity],["/re-assessment","Re-Assessment",RefreshCcw],["/medications","Medications",Pill]] as const;
-const employeeItems=[["/employee","Employee Home",BriefcaseBusiness],["/employee/application","Employment Application",BriefcaseBusiness],["/employee/information","Employment Information",IdCard],["/employee/training","Training",GraduationCap],["/employee/module/time-off-request","Time Off Request",CalendarClock],["/employee/time-sheet","Time Sheet / BHT Schedule",Clock3],["/employee/module/employee-performance","Employee Performance",ChartNoAxesCombined],["/employee/module/employee-tracking","Employee Tracking / Upload",Upload]] as const;
-const adminItems=[["/admin","Admin Dashboard",ShieldCheck],["/admin/users","Users & Staff",UserCog],["/admin/organizations","Organizations",Building2],["/admin/facilities","Facilities",Hospital],["/admin/roles","Roles & Permissions",Users],["/admin/audit-logs","Audit Logs",ScrollText]] as const;
-function isAdminRole(role?:string){return ["SUPER_ADMIN","ADMIN"].includes((role||"").toUpperCase())}
-export default function Sidebar({role}:{role?:string}){const path=usePathname();const admin=isAdminRole(role);const item=(href:string,label:string,Icon:any)=><Link key={href} className={`navitem ${path===href||path.startsWith(href+"/")?"active":""}`} href={href}><Icon size={18}/>{label}</Link>;return <aside className="sidebar"><div className="brand"><div className="brandmark">+</div><div><h1>EHR PORTAL</h1><small>Behavioral Health Management</small></div></div><div className="navgroup">Resident Workspace</div>{residentItems.map(([h,l,I])=>item(h,l,I))}<div className="navgroup">Employee Workspace</div>{employeeItems.map(([h,l,I])=>item(h,l,I))}<div className="navgroup">System</div>{item("/form-builder","Create Form",PlusSquare)}{item("/notifications","Notifications",Bell)}{item("/settings","Settings",Settings)}{admin&&<><div className="navgroup">Administration</div>{adminItems.map(([h,l,I])=>item(h,l,I))}</>}<div style={{marginTop:28,padding:"14px 12px",borderTop:"1px solid #ffffff20",fontSize:11,color:"#bfe1e6"}}><FileText size={14} style={{verticalAlign:"middle",marginRight:6}}/>Resident + Employee v2.0</div></aside>}
+"use client";
+import Image from "next/image";
+import Link from "next/link";
+import {usePathname} from "next/navigation";
+import {LayoutDashboard,Users,ClipboardList,Activity,HeartPulse,RefreshCcw,Pill,Bell,Settings,FileText,PlusSquare,ShieldCheck,Building2,Hospital,UserCog,ScrollText,Route,NotebookPen,BriefcaseBusiness,IdCard,GraduationCap,CalendarClock,Clock3,ChartNoAxesCombined,Upload} from "lucide-react";
+import type {Capability} from "@/lib/capabilities";
+
+type Item=readonly [string,string,any,Capability];
+const residentItems:Item[]=[
+["/dashboard","Home",LayoutDashboard,"dashboard.view"],
+["/residents","Resident List",Users,"residents.view"],
+["/appointments","Appointments",CalendarClock,"appointments.view"],
+["/therapy-progress-notes","Therapy Progress Notes",NotebookPen,"therapy.view"],
+["/mileage-log","Mileage Log",Route,"mileage.view"],
+["/resident-chart","Resident Chart",ClipboardList,"forms.view"],
+["/resident-vitals","Resident Vitals",HeartPulse,"vitals.view"],
+["/resident-tracking","Resident Tracking",Activity,"tracking.view"],
+["/re-assessment","Re-Assessment",RefreshCcw,"tracking.view"],
+["/medications","Medications",Pill,"medications.view"],
+];
+const employeeItems:Item[]=[
+["/employee","Employee Home",BriefcaseBusiness,"employee.view"],
+["/employee/application","Employment Application",BriefcaseBusiness,"employee.view"],
+["/employee/information","Employment Information",IdCard,"employee.view"],
+["/employee/training","Training",GraduationCap,"employee.view"],
+["/employee/module/time-off-request","Time Off Request",CalendarClock,"employee.view"],
+["/employee/time-sheet","Time Sheet / BHT Schedule",Clock3,"employee.view"],
+["/employee/module/employee-performance","Employee Performance",ChartNoAxesCombined,"employee.view"],
+["/employee/module/employee-tracking","Employee Tracking / Upload",Upload,"employee.view"],
+];
+const adminItems:Item[]=[
+["/admin","Admin Dashboard",ShieldCheck,"admin.dashboard"],
+["/admin/users","Users & Staff",UserCog,"admin.users"],
+["/admin/organizations","Organizations",Building2,"admin.organizations"],
+["/admin/facilities","Facilities",Hospital,"admin.facilities"],
+["/admin/roles","Role Capabilities",Users,"admin.roles"],
+["/admin/audit-logs","Audit Logs",ScrollText,"admin.audit"],
+];
+export default function Sidebar({role,capabilities}:{role?:string;capabilities:Capability[]}){
+ const path=usePathname(); const can=(c:Capability)=>role==="SUPER_ADMIN"||capabilities.includes(c);
+ const item=([href,label,Icon,cap]:Item)=>can(cap)?<Link key={href} className={`navitem ${path===href||path.startsWith(href+"/")?"active":""}`} href={href}><Icon size={18}/><span>{label}</span></Link>:null;
+ const visibleResidents=residentItems.filter(x=>can(x[3])); const visibleEmployees=employeeItems.filter(x=>can(x[3])); const visibleAdmin=adminItems.filter(x=>can(x[3]));
+ return <aside className="sidebar">
+  <Link href="/dashboard" className="brand brandLink"><div className="brandLogo"><Image src="/sbh-logo.png" alt="SBH" width={58} height={42} priority/></div><div><h1>SBH EHR PORTAL</h1><small>Behavioral Health Management</small></div></Link>
+  {visibleResidents.length>0&&<><div className="navgroup">Resident Workspace</div>{visibleResidents.map(item)}</>}
+  {visibleEmployees.length>0&&<><div className="navgroup">Employee Workspace</div>{visibleEmployees.map(item)}</>}
+  <div className="navgroup">System</div>
+  {can("form_builder.manage")&&item(["/form-builder","Form Builder",PlusSquare,"form_builder.manage"])}
+  {can("notifications.view")&&item(["/notifications","Notifications",Bell,"notifications.view"])}
+  {can("settings.view")&&item(["/settings","Settings",Settings,"settings.view"])}
+  {visibleAdmin.length>0&&<><div className="navgroup">Administration</div>{visibleAdmin.map(item)}</>}
+  <div className="sidebarVersion"><FileText size={14}/>Final v3.3</div>
+ </aside>
+}

@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound(){return <div className="standaloneState"><div className="card section standaloneStateCard"><div className="stateCode">404</div><h1>Page not found</h1><p className="muted">The page may have moved, or your role may not expose that route.</p><div className="actions" style={{justifyContent:"center"}}><Link className="btn btn-primary" href="/dashboard">Go to Dashboard</Link><Link className="btn btn-ghost" href="/login">Login</Link></div></div></div>}

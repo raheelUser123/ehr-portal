@@ -1,1 +1,2 @@
-import ResidentManager from "@/components/ResidentManager";export default function Page(){return <ResidentManager/>}
+import ResidentManager from "@/components/ResidentManager";import {getSession,hasCapability} from "@/lib/auth";
+export default async function Page({searchParams}:{searchParams:Promise<{search?:string}>}){const s=await getSession();const sp=await searchParams;return <ResidentManager initialSearch={sp.search||""} canCreate={hasCapability(s,"residents.create")} canEdit={hasCapability(s,"residents.edit")} canDelete={hasCapability(s,"residents.delete")} canBook={hasCapability(s,"appointments.manage")}/>}

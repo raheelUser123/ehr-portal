@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
-const ROLES = ["SUPER_ADMIN", "ADMIN", "BHP", "BHT", "NURSE", "THERAPIST", "CASE_MANAGER", "PROVIDER", "STAFF"];
+const ALL_ROLES = ["SUPER_ADMIN", "ADMIN", "BHP", "BHT", "NURSE", "THERAPIST", "CASE_MANAGER", "PROVIDER", "STAFF"];
 
 type UserRow = {
   id: string;
@@ -15,7 +16,8 @@ type UserRow = {
   created_at: string;
 };
 
-export default function UsersManager({ initialUsers, organizations, facilities }: any) {
+export default function UsersManager({ initialUsers, organizations, facilities, currentRole }: any) {
+  const ROLES = currentRole === "SUPER_ADMIN" ? ALL_ROLES : ALL_ROLES.filter(r=>r!=="SUPER_ADMIN");
   const [users, setUsers] = useState<UserRow[]>(initialUsers);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
@@ -55,6 +57,6 @@ export default function UsersManager({ initialUsers, organizations, facilities }
       <div className="field"><label>Organization</label><select className="select" value={form.organization_id} onChange={e=>setForm({...form,organization_id:e.target.value,facility_id:""})}><option value="">None</option>{organizations.map((o:any)=><option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
       <div className="field"><label>Facility</label><select className="select" value={form.facility_id} onChange={e=>setForm({...form,facility_id:e.target.value})}><option value="">None</option>{facilities.filter((f:any)=>!form.organization_id||f.organization_id===form.organization_id).map((f:any)=><option key={f.id} value={f.id}>{f.name}</option>)}</select></div>
     </div><div className="actions" style={{marginTop:16}}><button className="btn btn-primary">Create User</button><button type="button" className="btn btn-ghost" onClick={()=>setCreating(false)}>Cancel</button></div></form>}
-    <div className="card section"><div className="toolbar" style={{marginBottom:14}}><input className="input" style={{maxWidth:380}} placeholder="Search users or roles..." value={search} onChange={e=>setSearch(e.target.value)}/><span className="muted">{rows.length} users</span></div><div className="tablewrap"><table className="table"><thead><tr><th>User</th><th>Role</th><th>Organization</th><th>Facility</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map(u=><tr key={u.id}><td><b>{u.full_name||"Unnamed User"}</b><div className="muted" style={{fontSize:11}}>{u.id.slice(0,8)}…</div></td><td><select className="select compactSelect" value={(u.role||"STAFF").toUpperCase()} onChange={e=>update(u.id,{role:e.target.value})}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></td><td><select className="select compactSelect" value={u.organization_id||""} onChange={e=>update(u.id,{organization_id:e.target.value||null,facility_id:null})}><option value="">None</option>{organizations.map((o:any)=><option key={o.id} value={o.id}>{o.name}</option>)}</select></td><td><select className="select compactSelect" value={u.facility_id||""} onChange={e=>update(u.id,{facility_id:e.target.value||null})}><option value="">None</option>{facilities.filter((f:any)=>!u.organization_id||f.organization_id===u.organization_id).map((f:any)=><option key={f.id} value={f.id}>{f.name}</option>)}</select></td><td><span className={`badge ${u.active?"green":"gray"}`}>{u.active?"Active":"Inactive"}</span></td><td><button className={`btn ${u.active?"btn-danger":"btn-soft"}`} onClick={()=>update(u.id,{active:!u.active})}>{u.active?"Deactivate":"Activate"}</button></td></tr>)}</tbody></table></div></div>
+    <div className="card section"><div className="toolbar" style={{marginBottom:14}}><input className="input" style={{maxWidth:380}} placeholder="Search users or roles..." value={search} onChange={e=>setSearch(e.target.value)}/><span className="muted">{rows.length} users</span></div><div className="tablewrap"><table className="table"><thead><tr><th>User</th><th>Role</th><th>Organization</th><th>Facility</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map(u=><tr key={u.id}><td><Link href={`/admin/users/${u.id}`} style={{textDecoration:"none",color:"inherit"}}><b>{u.full_name||"Unnamed User"}</b></Link><div className="muted" style={{fontSize:11}}>{u.id.slice(0,8)}…</div></td><td>{currentRole!=="SUPER_ADMIN" && (u.role||"").toUpperCase()==="SUPER_ADMIN" ? <span className="badge blue">SUPER ADMIN</span> : <select className="select compactSelect" value={(u.role||"STAFF").toUpperCase()} onChange={e=>update(u.id,{role:e.target.value})}>{ROLES.map(r=><option key={r}>{r}</option>)}</select>}</td><td><select className="select compactSelect" value={u.organization_id||""} onChange={e=>update(u.id,{organization_id:e.target.value||null,facility_id:null})}><option value="">None</option>{organizations.map((o:any)=><option key={o.id} value={o.id}>{o.name}</option>)}</select></td><td><select className="select compactSelect" value={u.facility_id||""} onChange={e=>update(u.id,{facility_id:e.target.value||null})}><option value="">None</option>{facilities.filter((f:any)=>!u.organization_id||f.organization_id===u.organization_id).map((f:any)=><option key={f.id} value={f.id}>{f.name}</option>)}</select></td><td><span className={`badge ${u.active?"green":"gray"}`}>{u.active?"Active":"Inactive"}</span></td><td><div className="actions"><Link className="btn btn-ghost compactBtn" href={`/admin/users/${u.id}`}>View Profile</Link>{currentRole!=="SUPER_ADMIN" && (u.role||"").toUpperCase()==="SUPER_ADMIN" ? <span className="muted">Protected</span> : <button className={`btn ${u.active?"btn-danger":"btn-soft"}`} onClick={()=>update(u.id,{active:!u.active})}>{u.active?"Deactivate":"Activate"}</button>}</div></td></tr>)}</tbody></table></div></div>
   </>;
 }

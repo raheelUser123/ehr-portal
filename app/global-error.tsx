@@ -1,0 +1,2 @@
+"use client";
+export default function GlobalError({reset}:{error:Error & {digest?:string};reset:()=>void}){return <html><body><div className="standaloneState"><div className="card section standaloneStateCard"><div className="stateCode">!</div><h1>Something went wrong</h1><p className="muted">The portal hit an unexpected error. Your data was not intentionally changed by this screen.</p><button className="btn btn-primary" onClick={()=>reset()}>Try Again</button></div></div></body></html>}

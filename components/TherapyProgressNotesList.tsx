@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function TherapyProgressNotesList() {
+export default function TherapyProgressNotesList({canManage}:{canManage:boolean}) {
   const supabase = useMemo(() => createClient(), []);
   const [notes, setNotes] = useState<any[]>([]);
   const [residents, setResidents] = useState<any[]>([]);
@@ -69,9 +69,9 @@ export default function TherapyProgressNotesList() {
           ← <span>Back</span>
         </Link>
         <h1>Therapy Progress Notes</h1>
-        <Link href="/therapy-progress-notes/new" className="tpn-create">
+        {canManage && <Link href="/therapy-progress-notes/new" className="tpn-create">
           + Create New
-        </Link>
+        </Link>}
       </div>
 
       <div className="tpn-list-tools">
@@ -138,14 +138,7 @@ export default function TherapyProgressNotesList() {
                       </td>
                       <td>{note.total_duration || "—"}</td>
                       <td>
-                        <div className="tpn-row-actions">
-                          <Link href={`/therapy-progress-notes/${note.id}/edit`}>
-                            Edit
-                          </Link>
-                          <button type="button" onClick={() => remove(note.id)}>
-                            Delete
-                          </button>
-                        </div>
+                        <div className="tpn-row-actions">{canManage ? <><Link href={`/therapy-progress-notes/${note.id}/edit`}>Edit</Link><button type="button" onClick={() => remove(note.id)}>Delete</button></> : <span className="muted">View only</span>}</div>
                       </td>
                     </tr>
                   );

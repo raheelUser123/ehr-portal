@@ -1,1 +1,1 @@
-import EmploymentApplicationForm from "@/components/EmploymentApplicationForm";export default function Page(){return <EmploymentApplicationForm/>}
+import EmploymentApplicationForm from "@/components/EmploymentApplicationForm";import {getSession,hasCapability} from "@/lib/auth";export default async function Page(){const s=await getSession();return <EmploymentApplicationForm canManage={hasCapability(s,"employee.manage")}/>}

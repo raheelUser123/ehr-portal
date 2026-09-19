@@ -1,1 +1,1 @@
-import VitalsManager from "@/components/VitalsManager";export default function Page(){return <VitalsManager/>}
+import VitalsManager from "@/components/VitalsManager";import {getSession,hasCapability} from "@/lib/auth";export default async function Page(){const s=await getSession();return <VitalsManager canManage={hasCapability(s,"vitals.manage")}/>}

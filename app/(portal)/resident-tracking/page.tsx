@@ -1,1 +1,1 @@
-import TrackingManager from "@/components/TrackingManager";export default function Page(){return <TrackingManager/>}
+import TrackingManager from "@/components/TrackingManager";import {getSession,hasCapability} from "@/lib/auth";export default async function Page(){const s=await getSession();return <TrackingManager canManage={hasCapability(s,"tracking.manage")}/>}
