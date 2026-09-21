@@ -211,3 +211,12 @@ insert into public.role_permissions(role, capability, allowed) values
 ('SUPER_ADMIN','settings.view',true),('SUPER_ADMIN','settings.manage',true),
 ('SUPER_ADMIN','admin.dashboard',true),('SUPER_ADMIN','admin.users',true),('SUPER_ADMIN','admin.organizations',true),('SUPER_ADMIN','admin.facilities',true),('SUPER_ADMIN','admin.roles',true),('SUPER_ADMIN','admin.audit',true)
 on conflict(role, capability) do update set allowed = true, updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- v4 feedback fixes: monthly MAR schedule metadata
+-- ---------------------------------------------------------------------------
+alter table public.medications add column if not exists schedule_times jsonb not null default '[]'::jsonb;
+alter table public.medications add column if not exists refill_count integer;
+alter table public.medications add column if not exists expiration_date date;
+alter table public.medications add column if not exists other_instructions text;
+create index if not exists medications_resident_active_idx on public.medications(resident_id, active);

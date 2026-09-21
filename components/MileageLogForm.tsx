@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import SignaturePad from "@/components/SignaturePad";
 
 type FormState = {
   log_date: string;
@@ -151,10 +152,10 @@ export default function MileageLogForm({ logId }: { logId?: string }) {
       <div className="ml-card">
         <h3>Signatures</h3>
         <div className="ml-grid ml-grid-2">
-          <label>Driver&apos;s Signature<input placeholder="Type full name to sign" value={form.driver_signature} onChange={(e) => set("driver_signature", e.target.value)} /></label>
+          <SignaturePad label="Driver's Signature" value={form.driver_signature} onChange={(v) => set("driver_signature", v)} />
           <label>Witness Name<input placeholder="Enter text" value={form.witness_name} onChange={(e) => set("witness_name", e.target.value)} /></label>
-          <label>Resident/Representative Signature<input placeholder="Type full name to sign" value={form.resident_signature} onChange={(e) => set("resident_signature", e.target.value)} /></label>
-          <label>Witness Signature<input placeholder="Type full name to sign" value={form.witness_signature} onChange={(e) => set("witness_signature", e.target.value)} /></label>
+          <SignaturePad label="Resident/Representative Signature" value={form.resident_signature} onChange={(v) => set("resident_signature", v)} />
+          <SignaturePad label="Witness Signature" value={form.witness_signature} onChange={(v) => set("witness_signature", v)} />
         </div>
         <label className="ml-label">Signers
           <select multiple value={form.signer_ids} onChange={(e) => set("signer_ids", Array.from(e.target.selectedOptions).map((o) => o.value))}>

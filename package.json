@@ -1,6 +1,6 @@
 {
-  "name": "sbh-ehr-portal",
-  "version": "3.3.0",
+  "name": "ehr-portal-resident-module",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import RichTextEditor from "./RichTextEditor";
+import SignaturePad from "./SignaturePad";
 
 type Resident = {
   id: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  reference_id?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  referenceId?: string | null;
 };
 
 type Profile = {
@@ -79,19 +80,13 @@ export default function TherapyProgressNoteForm({
 
   useEffect(() => {
     (async () => {
-      const [{ data: residentData }, { data: profileData }] = await Promise.all([
-        supabase
-          .from("residents")
-          .select("id,first_name,last_name,reference_id")
-          .order("first_name"),
-        supabase
-          .from("profiles")
-          .select("id,full_name,role")
-          .order("first_name"),
+      const [residentResponse, profileResult] = await Promise.all([
+        fetch("/api/residents", { cache: "no-store" }),
+        supabase.from("profiles").select("id,full_name,role").order("full_name"),
       ]);
-
-      setResidents(residentData || []);
-      setProfiles(profileData || []);
+      const residentData = await residentResponse.json().catch(() => []);
+      setResidents(Array.isArray(residentData) ? residentData : []);
+      setProfiles(profileResult.data || []);
 
       if (noteId) {
         const { data, error } = await supabase
@@ -248,8 +243,8 @@ export default function TherapyProgressNoteForm({
             <option value="">Select...</option>
             {residents.map((resident) => (
               <option key={resident.id} value={resident.id}>
-                {[resident.first_name, resident.last_name].filter(Boolean).join(" ")}
-                {resident.reference_id ? ` (${resident.reference_id})` : ""}
+                {[resident.firstName, resident.lastName].filter(Boolean).join(" ")}
+                {resident.referenceId ? ` (${resident.referenceId})` : ""}
               </option>
             ))}
           </select>
@@ -259,7 +254,7 @@ export default function TherapyProgressNoteForm({
           <div className="tpn-selected-resident">
             Selected resident:{" "}
             <strong>
-              {[selectedResident.first_name, selectedResident.last_name]
+              {[selectedResident.firstName, selectedResident.lastName]
                 .filter(Boolean)
                 .join(" ")}
             </strong>
@@ -371,25 +366,11 @@ export default function TherapyProgressNoteForm({
 
         <div className="tpn-signature-grid">
           <div className="tpn-signature">
-            <div>
-              <strong>BHT Signature</strong>
-              <input
-                placeholder="Type full name to sign"
-                value={form.bht_signature}
-                onChange={(e) => update("bht_signature", e.target.value)}
-              />
-            </div>
+            <SignaturePad label="BHT Signature" value={form.bht_signature} onChange={(v) => update("bht_signature", v)} />
             <span>Date Signed: {form.bht_signature ? new Date().toLocaleDateString() : "—"}</span>
           </div>
           <div className="tpn-signature">
-            <div>
-              <strong>BHP Signature</strong>
-              <input
-                placeholder="Type full name to sign"
-                value={form.bhp_signature}
-                onChange={(e) => update("bhp_signature", e.target.value)}
-              />
-            </div>
+            <SignaturePad label="BHP Signature" value={form.bhp_signature} onChange={(v) => update("bhp_signature", v)} />
             <span>Date Signed: {form.bhp_signature ? new Date().toLocaleDateString() : "—"}</span>
           </div>
         </div>

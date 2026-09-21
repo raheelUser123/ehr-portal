@@ -122,6 +122,30 @@
         "required": false,
         "readonly": false,
         "options": []
+      },
+      {
+        "name": "employee-signature",
+        "label": "Employee Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "resident-representative-signature",
+        "label": "Resident/Representative Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "witness-signature",
+        "label": "Witness Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
       }
     ]
   },
@@ -3334,6 +3358,22 @@
         "required": false,
         "readonly": false,
         "options": []
+      },
+      {
+        "name": "bht-signature",
+        "label": "BHT Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "bhp-signature",
+        "label": "BHP Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
       }
     ]
   },
@@ -3501,6 +3541,22 @@
           "Yes",
           "No"
         ]
+      },
+      {
+        "name": "resident-representative-signature",
+        "label": "Resident/Representative Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "witness-signature",
+        "label": "Witness Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
       }
     ]
   },
@@ -4311,6 +4367,22 @@
         "required": false,
         "readonly": false,
         "options": []
+      },
+      {
+        "name": "resident-representative-signature",
+        "label": "Resident/Representative Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "witness-signature",
+        "label": "Witness Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
       }
     ]
   },
@@ -4787,6 +4859,22 @@
         "required": false,
         "readonly": false,
         "options": []
+      },
+      {
+        "name": "resident-representative-signature",
+        "label": "Resident/Representative Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "witness-signature",
+        "label": "Witness Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
       }
     ]
   },
@@ -5205,6 +5293,22 @@
       {
         "name": "bhp-name",
         "label": "BHP Name",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "bht-signature",
+        "label": "BHT Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "bhp-signature",
+        "label": "BHP Signature",
         "type": "text",
         "required": false,
         "readonly": false,
@@ -12160,7 +12264,7 @@
       {
         "name": "date",
         "label": "Date",
-        "type": "text",
+        "type": "date",
         "required": false,
         "readonly": false,
         "options": []
@@ -12188,23 +12292,28 @@
         "label": "Shift Timing",
         "type": "select",
         "required": false,
-        "readonly": true,
-        "options": []
+        "readonly": false,
+        "options": [
+          "Morning Shift",
+          "Evening Shift",
+          "Night Shift",
+          "Custom"
+        ]
       },
       {
         "name": "shift-beginning-time",
         "label": "Shift: Beginning Time",
-        "type": "text",
+        "type": "time",
         "required": false,
-        "readonly": true,
+        "readonly": false,
         "options": []
       },
       {
         "name": "shift-end-time",
         "label": "Shift: End Time",
-        "type": "text",
+        "type": "time",
         "required": false,
-        "readonly": true,
+        "readonly": false,
         "options": []
       },
       {
@@ -13929,6 +14038,22 @@
           "Yes",
           "No"
         ]
+      },
+      {
+        "name": "resident-representative-signature",
+        "label": "Resident/Representative Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
+      },
+      {
+        "name": "witness-signature",
+        "label": "Witness Signature",
+        "type": "text",
+        "required": false,
+        "readonly": false,
+        "options": []
       }
     ]
   },
