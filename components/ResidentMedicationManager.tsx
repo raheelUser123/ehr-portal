@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 
-const blank={name:'',dosage:'',route:'',frequency:'',prescriber:'',startDate:'',endDate:'',instructions:'',otherInstructions:'',refillCount:'',expirationDate:'',scheduleTimes:['08:00','14:00','20:00'],active:true};
+const blank={name:'',dosage:'',route:'',frequency:'',prescriber:'',startDate:'',endDate:'',instructions:'',otherInstructions:'',refillCount:'',expirationDate:'',scheduleTimes:[],active:true};
 
 export default function ResidentMedicationManager({canManage=true}:{canManage?:boolean}){
  const [residents,setResidents]=useState<any[]>([]),[residentId,setResidentId]=useState(''),[rows,setRows]=useState<any[]>([]),[form,setForm]=useState<any>(blank),[editId,setEditId]=useState<string|null>(null);
@@ -9,10 +9,10 @@ export default function ResidentMedicationManager({canManage=true}:{canManage?:b
  async function load(){const r=await fetch('/api/medications');const x=await r.json();setRows(Array.isArray(x)?x:[])}
  async function save(e:any){e.preventDefault();if(!residentId)return;const r=await fetch(editId?`/api/medications/${editId}`:'/api/medications',{method:editId?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...form,residentId,scheduleTimes:(form.scheduleTimes||[]).filter(Boolean)})});const j=await r.json().catch(()=>({}));if(!r.ok){alert(j.error||'Unable to save medication.');return}setForm(blank);setEditId(null);setResidentId('');load()}
  async function del(id:string){if(!confirm('Delete medication?'))return;const r=await fetch(`/api/medications/${id}`,{method:'DELETE'});if(!r.ok){const j=await r.json();alert(j.error||'Unable to delete medication.');return}load()}
- function edit(m:any){setEditId(m.id);setResidentId(m.residentId||m.resident_id);setForm({name:m.name||'',dosage:m.dosage||'',route:m.route||'',frequency:m.frequency||'',prescriber:m.prescriber||'',startDate:m.startDate||m.start_date||'',endDate:m.endDate||m.end_date||'',instructions:m.instructions||'',otherInstructions:m.otherInstructions||m.other_instructions||'',refillCount:m.refillCount??m.refill_count??'',expirationDate:m.expirationDate||m.expiration_date||'',scheduleTimes:Array.isArray(m.scheduleTimes)?m.scheduleTimes:Array.isArray(m.schedule_times)?m.schedule_times:['08:00','14:00','20:00'],active:m.active!==false});window.scrollTo({top:0,behavior:'smooth'})}
+ function edit(m:any){setEditId(m.id);setResidentId(m.residentId||m.resident_id);setForm({name:m.name||'',dosage:m.dosage||'',route:m.route||'',frequency:m.frequency||'',prescriber:m.prescriber||'',startDate:m.startDate||m.start_date||'',endDate:m.endDate||m.end_date||'',instructions:m.instructions||'',otherInstructions:m.otherInstructions||m.other_instructions||'',refillCount:m.refillCount??m.refill_count??'',expirationDate:m.expirationDate||m.expiration_date||'',scheduleTimes:Array.isArray(m.scheduleTimes)?m.scheduleTimes:Array.isArray(m.schedule_times)?m.schedule_times:[],active:m.active!==false});window.scrollTo({top:0,behavior:'smooth'})}
  function addTime(){setForm({...form,scheduleTimes:[...(form.scheduleTimes||[]),'20:00']})}
  function updateTime(i:number,v:string){const a=[...(form.scheduleTimes||[])];a[i]=v;setForm({...form,scheduleTimes:a})}
- function removeTime(i:number){const a=[...(form.scheduleTimes||[])];a.splice(i,1);setForm({...form,scheduleTimes:a.length?a:['08:00','14:00','20:00']})}
+ function removeTime(i:number){const a=[...(form.scheduleTimes||[])];a.splice(i,1);setForm({...form,scheduleTimes:a})}
  return <>
  <div className="pagehead"><div><h2>Resident Medication</h2><div className="muted">Maintain the active medication list and exact administration times for each resident.</div></div><a className="btn btn-ghost" href="/medications">Back</a></div>
  {canManage&&<form className="card section" onSubmit={save}><div className="pagehead"><h3>{editId?'Edit Medication':'Add Medication'}</h3>{editId&&<button type="button" className="btn btn-ghost" onClick={()=>{setEditId(null);setResidentId('');setForm(blank)}}>Cancel Edit</button>}</div>

@@ -1,423 +1,47 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import {useEffect,useMemo,useState} from "react";
+import {useRouter} from "next/navigation";
+import {createClient} from "@/lib/supabase/client";
 import RichTextEditor from "./RichTextEditor";
 import SignaturePad from "./SignaturePad";
 
-type Resident = {
-  id: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  referenceId?: string | null;
-};
-
-type Profile = {
-  id: string;
-  full_name?: string | null;
-  role?: string | null;
-};
-
-type NoteForm = {
-  resident_id: string;
-  group_therapy: boolean;
-  individual_therapy: boolean;
-  in_person: boolean;
-  telehealth: boolean;
-  note_date: string;
-  start_time: string;
-  end_time: string;
-  total_duration: string;
-  employee_contractor: string;
-  facility_address: string;
-  topic: string;
-  note_summary: string;
-  recommendation: string;
-  bht_name: string;
-  bhp_name: string;
-  bht_signature: string;
-  bhp_signature: string;
-  signer_ids: string[];
-  status: "draft" | "submitted";
-};
-
-const emptyForm: NoteForm = {
-  resident_id: "",
-  group_therapy: false,
-  individual_therapy: false,
-  in_person: false,
-  telehealth: false,
-  note_date: new Date().toISOString().slice(0, 10),
-  start_time: "",
-  end_time: "",
-  total_duration: "",
-  employee_contractor: "",
-  facility_address: "",
-  topic: "",
-  note_summary: "",
-  recommendation: "",
-  bht_name: "",
-  bhp_name: "",
-  bht_signature: "",
-  bhp_signature: "",
-  signer_ids: [],
-  status: "draft",
-};
-
-export default function TherapyProgressNoteForm({
-  noteId,
-}: {
-  noteId?: string;
-}) {
-  const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-  const [form, setForm] = useState<NoteForm>(emptyForm);
-  const [residents, setResidents] = useState<Resident[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    (async () => {
-      const [residentResponse, profileResult] = await Promise.all([
-        fetch("/api/residents", { cache: "no-store" }),
-        supabase.from("profiles").select("id,full_name,role").order("full_name"),
-      ]);
-      const residentData = await residentResponse.json().catch(() => []);
-      setResidents(Array.isArray(residentData) ? residentData : []);
-      setProfiles(profileResult.data || []);
-
-      if (noteId) {
-        const { data, error } = await supabase
-          .from("therapy_progress_notes")
-          .select("*")
-          .eq("id", noteId)
-          .single();
-
-        if (error) {
-          setMessage(error.message);
-          return;
-        }
-
-        if (data) {
-          setForm({
-            resident_id: data.resident_id || "",
-            group_therapy: !!data.group_therapy,
-            individual_therapy: !!data.individual_therapy,
-            in_person: !!data.in_person,
-            telehealth: !!data.telehealth,
-            note_date: data.note_date || "",
-            start_time: data.start_time || "",
-            end_time: data.end_time || "",
-            total_duration: data.total_duration || "",
-            employee_contractor: data.employee_contractor || "",
-            facility_address: data.facility_address || "",
-            topic: data.topic || "",
-            note_summary: data.note_summary || "",
-            recommendation: data.recommendation || "",
-            bht_name: data.bht_name || "",
-            bhp_name: data.bhp_name || "",
-            bht_signature: data.bht_signature || "",
-            bhp_signature: data.bhp_signature || "",
-            signer_ids: data.signer_ids || [],
-            status: data.status === "submitted" ? "submitted" : "draft",
-          });
-        }
-      }
-    })();
-  }, [noteId, supabase]);
-
-  const update = <K extends keyof NoteForm>(key: K, value: NoteForm[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const save = async (status: "draft" | "submitted") => {
-    setMessage("");
-
-    if (!form.resident_id) {
-      setMessage("Please select a resident.");
-      return;
-    }
-
-    if (status === "submitted" && (!form.topic || !form.note_summary)) {
-      setMessage("Topic and Note Summary are required before submission.");
-      return;
-    }
-
-    setSaving(true);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const payload = {
-      ...form,
-      status,
-      updated_at: new Date().toISOString(),
-      created_by: user?.id || null,
-    };
-
-    let result;
-
-    if (noteId) {
-      result = await supabase
-        .from("therapy_progress_notes")
-        .update(payload)
-        .eq("id", noteId)
-        .select("id")
-        .single();
-    } else {
-      result = await supabase
-        .from("therapy_progress_notes")
-        .insert(payload)
-        .select("id")
-        .single();
-    }
-
-    if (result.error) {
-      setMessage(result.error.message);
-      setSaving(false);
-      return;
-    }
-
-    if (user?.id) {
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        title: status === "draft" ? "Therapy note saved" : "Therapy note submitted",
-        message:
-          status === "draft"
-            ? "A Therapy Progress Note was saved as draft."
-            : "A Therapy Progress Note was submitted.",
-        type: "therapy_progress_note",
-        read: false,
-      }).then(() => {});
-    }
-
-    setSaving(false);
-    router.push("/therapy-progress-notes");
-    router.refresh();
-  };
-
-  const selectedResident = residents.find((r) => r.id === form.resident_id);
-
-  return (
-    <div className="tpn-page">
-      <div className="tpn-titlebar">
-        <button type="button" className="tpn-back" onClick={() => router.back()}>
-          ← <span>Back</span>
-        </button>
-        <h1>Therapy Progress Notes</h1>
-        <div />
-      </div>
-
-      <div className="tpn-card">
-        <div className="tpn-check-row">
-          {[
-            ["group_therapy", "Group Therapy"],
-            ["individual_therapy", "Individual Therapy"],
-            ["in_person", "In Person"],
-            ["telehealth", "Telehealth"],
-          ].map(([key, label]) => (
-            <label className="tpn-check" key={key}>
-              <input
-                type="checkbox"
-                checked={Boolean(form[key as keyof NoteForm])}
-                onChange={(e) =>
-                  update(key as keyof NoteForm, e.target.checked as never)
-                }
-              />
-              <span>{label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="tpn-card">
-        <label className="tpn-label">
-          Resident&apos;s Name
-          <select
-            value={form.resident_id}
-            onChange={(e) => update("resident_id", e.target.value)}
-          >
-            <option value="">Select...</option>
-            {residents.map((resident) => (
-              <option key={resident.id} value={resident.id}>
-                {[resident.firstName, resident.lastName].filter(Boolean).join(" ")}
-                {resident.referenceId ? ` (${resident.referenceId})` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {selectedResident && (
-          <div className="tpn-selected-resident">
-            Selected resident:{" "}
-            <strong>
-              {[selectedResident.firstName, selectedResident.lastName]
-                .filter(Boolean)
-                .join(" ")}
-            </strong>
-          </div>
-        )}
-      </div>
-
-      <div className="tpn-card">
-        <div className="tpn-grid tpn-grid-4">
-          <label className="tpn-label">
-            Today&apos;s Date
-            <input
-              type="date"
-              value={form.note_date}
-              onChange={(e) => update("note_date", e.target.value)}
-            />
-          </label>
-          <label className="tpn-label">
-            Start time
-            <input
-              type="time"
-              value={form.start_time}
-              onChange={(e) => update("start_time", e.target.value)}
-            />
-          </label>
-          <label className="tpn-label">
-            End time
-            <input
-              type="time"
-              value={form.end_time}
-              onChange={(e) => update("end_time", e.target.value)}
-            />
-          </label>
-          <label className="tpn-label">
-            Total Duration
-            <input
-              placeholder="hours (Ex. 1hr)"
-              value={form.total_duration}
-              onChange={(e) => update("total_duration", e.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="tpn-grid tpn-grid-2">
-          <label className="tpn-label">
-            Employee/Contractor
-            <input
-              value={form.employee_contractor}
-              onChange={(e) => update("employee_contractor", e.target.value)}
-            />
-          </label>
-          <label className="tpn-label">
-            Facility Address
-            <input
-              value={form.facility_address}
-              onChange={(e) => update("facility_address", e.target.value)}
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="tpn-card">
-        <label className="tpn-label">
-          Topic
-          <input
-            placeholder="Select Topic..."
-            value={form.topic}
-            onChange={(e) => update("topic", e.target.value)}
-          />
-        </label>
-      </div>
-
-      <div className="tpn-card">
-        <div className="tpn-label">Note Summary</div>
-        <RichTextEditor
-          value={form.note_summary}
-          onChange={(value) => update("note_summary", value)}
-          placeholder="Write therapy progress note..."
-        />
-
-        <div className="tpn-label tpn-editor-title">Recommendation</div>
-        <RichTextEditor
-          value={form.recommendation}
-          onChange={(value) => update("recommendation", value)}
-          placeholder="Write recommendation..."
-        />
-      </div>
-
-      <div className="tpn-card">
-        <h3>Signer Names</h3>
-        <div className="tpn-grid tpn-grid-2">
-          <label className="tpn-label">
-            BHT Name
-            <input
-              value={form.bht_name}
-              onChange={(e) => update("bht_name", e.target.value)}
-              placeholder="Enter text"
-            />
-          </label>
-          <label className="tpn-label">
-            BHP Name
-            <input
-              value={form.bhp_name}
-              onChange={(e) => update("bhp_name", e.target.value)}
-              placeholder="Enter text"
-            />
-          </label>
-        </div>
-
-        <div className="tpn-signature-grid">
-          <div className="tpn-signature">
-            <SignaturePad label="BHT Signature" value={form.bht_signature} onChange={(v) => update("bht_signature", v)} />
-            <span>Date Signed: {form.bht_signature ? new Date().toLocaleDateString() : "—"}</span>
-          </div>
-          <div className="tpn-signature">
-            <SignaturePad label="BHP Signature" value={form.bhp_signature} onChange={(v) => update("bhp_signature", v)} />
-            <span>Date Signed: {form.bhp_signature ? new Date().toLocaleDateString() : "—"}</span>
-          </div>
-        </div>
-
-        <label className="tpn-label tpn-signers">
-          Signers
-          <select
-            multiple
-            value={form.signer_ids}
-            onChange={(e) =>
-              update(
-                "signer_ids",
-                Array.from(e.target.selectedOptions).map((option) => option.value)
-              )
-            }
-          >
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.full_name || profile.id}
-                {profile.role ? ` — ${profile.role}` : ""}
-              </option>
-            ))}
-          </select>
-          <small>Hold Ctrl/Cmd to select multiple signers.</small>
-        </label>
-      </div>
-
-      {message && <div className="tpn-message">{message}</div>}
-
-      <div className="tpn-actions">
-        <button
-          type="button"
-          className="tpn-btn tpn-btn-secondary"
-          disabled={saving}
-          onClick={() => save("draft")}
-        >
-          Save as Draft
-        </button>
-        <button
-          type="button"
-          className="tpn-btn"
-          disabled={saving}
-          onClick={() => save("submitted")}
-        >
-          {saving ? "Saving..." : "SUBMIT"}
-        </button>
-      </div>
-    </div>
-  );
+type Resident={id:string;firstName?:string|null;lastName?:string|null;referenceId?:string|null;ahcccsId?:string|null;diagnosis?:string|null;facility_id?:string|null;facility?:string|null};
+type Profile={id:string;full_name?:string|null;role?:string|null};
+type Facility={id:string;name:string;address?:string|null};
+type Assessment={completedSession:string;treatmentGoals:string;participation:string;participationOther:string;appearance:string[];appearanceOther:string;mood:string[];moodOther:string;quality:string[];qualityOther:string;progress:string[];progressOther:string;response:string;goals:string[];goalsOther:string;significantInfo:string;significantDetails:string};
+const emptyAssessment=():Assessment=>({completedSession:"",treatmentGoals:"",participation:"",participationOther:"",appearance:[],appearanceOther:"",mood:[],moodOther:"",quality:[],qualityOther:"",progress:[],progressOther:"",response:"",goals:[],goalsOther:"",significantInfo:"",significantDetails:""});
+type NoteForm={resident_id:string;resident_ids:string[];facility_id:string;group_therapy:boolean;individual_therapy:boolean;in_person:boolean;telehealth:boolean;note_date:string;start_time:string;end_time:string;total_duration:string;employee_contractor:string;facility_address:string;topic:string;note_summary:string;recommendation:string;resident_assessments:Record<string,Assessment>;bht_name:string;bhp_name:string;bht_signature:string;bhp_signature:string;signer_ids:string[];status:"draft"|"submitted"};
+const emptyForm:NoteForm={resident_id:"",resident_ids:[],facility_id:"",group_therapy:false,individual_therapy:false,in_person:false,telehealth:false,note_date:new Date().toISOString().slice(0,10),start_time:"",end_time:"",total_duration:"",employee_contractor:"",facility_address:"",topic:"",note_summary:"",recommendation:"",resident_assessments:{},bht_name:"",bhp_name:"",bht_signature:"",bhp_signature:"",signer_ids:[],status:"draft"};
+const APPEARANCE=["Neat","Unkept","Inappropriate","Bizarre"];
+const MOOD=["Normal","Euthymic","Anxious","Depressed","Euphoric","Irritable"];
+const QUALITY=["Attentive","Supportive","Sharing","Intrusive","Resistant"];
+const PROGRESS=["Deterioration","No Progress","Small Progress","Good Progress","Goal Achieved"];
+const GOALS=["Sobriety","Independent Living Skills","Medication","Safety","ADLS","Managing Mental Health","Legal"];
+export default function TherapyProgressNoteForm({noteId}:{noteId?:string}){
+ const router=useRouter(),supabase=useMemo(()=>createClient(),[]);const [form,setForm]=useState<NoteForm>(emptyForm),[residents,setResidents]=useState<Resident[]>([]),[profiles,setProfiles]=useState<Profile[]>([]),[facilities,setFacilities]=useState<Facility[]>([]),[saving,setSaving]=useState(false),[message,setMessage]=useState("");
+ useEffect(()=>{(async()=>{const [rr,fr,pr]=await Promise.all([fetch("/api/residents",{cache:"no-store"}),fetch("/api/facilities",{cache:"no-store"}),supabase.from("profiles").select("id,full_name,role").order("full_name")]);const rd=await rr.json().catch(()=>[]),fd=await fr.json().catch(()=>[]);setResidents(Array.isArray(rd)?rd.filter((r:any)=>r.status!=="inactive"):[]);setFacilities(Array.isArray(fd)?fd:[]);setProfiles(pr.data||[]);if(noteId){const {data,error}=await supabase.from("therapy_progress_notes").select("*").eq("id",noteId).single();if(error){setMessage(error.message);return}if(data)setForm({...emptyForm,...data,resident_id:data.resident_id||"",resident_ids:Array.isArray(data.resident_ids)&&data.resident_ids.length?data.resident_ids:(data.resident_id?[data.resident_id]:[]),facility_id:data.facility_id||"",resident_assessments:data.resident_assessments||{},signer_ids:data.signer_ids||[],status:data.status==="submitted"?"submitted":"draft"})}})()},[noteId,supabase]);
+ const update=(key:keyof NoteForm,value:any)=>setForm(p=>({...p,[key]:value}));
+ const selectedIds=form.group_therapy?form.resident_ids:(form.resident_id?[form.resident_id]:[]);const selectedResidents=selectedIds.map(id=>residents.find(r=>r.id===id)).filter(Boolean) as Resident[];
+ function therapyType(key:"group_therapy"|"individual_therapy",checked:boolean){setForm(p=>({...p,[key]:checked,...(checked&&key==="group_therapy"?{individual_therapy:false,resident_id:""}:{}),...(checked&&key==="individual_therapy"?{group_therapy:false,resident_ids:[]}:{} )}))}
+ function selectFacility(id:string){const f=facilities.find(x=>x.id===id);setForm(p=>({...p,facility_id:id,facility_address:f?.address||""}))}
+ function toggleResident(id:string){setForm(p=>{const ids=p.resident_ids.includes(id)?p.resident_ids.filter(x=>x!==id):[...p.resident_ids,id];const a={...p.resident_assessments};if(!a[id])a[id]=emptyAssessment();return {...p,resident_ids:ids,resident_id:ids[0]||"",resident_assessments:a}})}
+ function assess(id:string,key:keyof Assessment,value:any){setForm(p=>({...p,resident_assessments:{...p.resident_assessments,[id]:{...(p.resident_assessments[id]||emptyAssessment()),[key]:value}}}))}
+ function toggleArray(id:string,key:"appearance"|"mood"|"quality"|"progress"|"goals",v:string){const a=form.resident_assessments[id]||emptyAssessment();assess(id,key,a[key].includes(v)?a[key].filter(x=>x!==v):[...a[key],v])}
+ async function save(status:"draft"|"submitted"){setMessage("");if(!selectedIds.length){setMessage("Please select at least one resident.");return}if(status==="submitted"&&(!form.topic||!form.note_summary)){setMessage("Topic and Note Summary are required before submission.");return}setSaving(true);const {data:{user}}=await supabase.auth.getUser();const payload={...form,resident_id:selectedIds[0],resident_ids:selectedIds,status,updated_at:new Date().toISOString(),created_by:user?.id||null};const q=noteId?supabase.from("therapy_progress_notes").update(payload).eq("id",noteId):supabase.from("therapy_progress_notes").insert(payload);const {error}=await q;if(error){setMessage(error.message);setSaving(false);return}setSaving(false);router.push("/therapy-progress-notes");router.refresh()}
+ return <div className="tpn-page"><div className="tpn-titlebar"><button type="button" className="tpn-back" onClick={()=>router.back()}>← <span>Back</span></button><h1>Therapy Progress Notes</h1><div/></div>
+ <div className="tpn-card"><div className="tpn-check-row"><Check label="Group Therapy" checked={form.group_therapy} onChange={v=>therapyType("group_therapy",v)}/><Check label="Individual Therapy" checked={form.individual_therapy} onChange={v=>therapyType("individual_therapy",v)}/><Check label="In Person" checked={form.in_person} onChange={v=>update("in_person",v)}/><Check label="Telehealth" checked={form.telehealth} onChange={v=>update("telehealth",v)}/></div></div>
+ {form.group_therapy&&<div className="tpn-card"><label className="tpn-label">Facility<select value={form.facility_id} onChange={e=>selectFacility(e.target.value)}><option value="">Select facility</option>{facilities.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label></div>}
+ <div className="tpn-card"><div className="tpn-label">Resident&apos;s Name{form.group_therapy?<div className="tpn-resident-multi">{residents.map(r=><label className={`tpn-resident-option ${form.resident_ids.includes(r.id)?"selected":""}`} key={r.id}><input type="checkbox" checked={form.resident_ids.includes(r.id)} onChange={()=>toggleResident(r.id)}/><span>{[r.firstName,r.lastName].filter(Boolean).join(" ")}{r.referenceId?` (${r.referenceId})`:""}</span></label>)}</div>:<select value={form.resident_id} onChange={e=>{const id=e.target.value;update("resident_id",id);if(id&&!form.resident_assessments[id])setForm(p=>({...p,resident_id:id,resident_assessments:{...p.resident_assessments,[id]:emptyAssessment()}}))}}><option value="">Select...</option>{residents.map(r=><option key={r.id} value={r.id}>{[r.firstName,r.lastName].filter(Boolean).join(" ")}{r.referenceId?` (${r.referenceId})`:""}</option>)}</select>}</div></div>
+ <div className="tpn-card"><div className="tpn-grid tpn-grid-4"><Field label="Today’s Date"><input type="date" value={form.note_date} onChange={e=>update("note_date",e.target.value)}/></Field><Field label="Start time"><input type="time" value={form.start_time} onChange={e=>update("start_time",e.target.value)}/></Field><Field label="End time"><input type="time" value={form.end_time} onChange={e=>update("end_time",e.target.value)}/></Field><Field label="Total Duration"><input placeholder="hours (Ex. 1hr)" value={form.total_duration} onChange={e=>update("total_duration",e.target.value)}/></Field></div><div className="tpn-grid tpn-grid-2"><Field label="Employee/Contractor"><input value={form.employee_contractor} onChange={e=>update("employee_contractor",e.target.value)}/></Field><Field label="Facility Address"><input value={form.facility_address} onChange={e=>update("facility_address",e.target.value)}/></Field></div></div>
+ <div className="tpn-card"><Field label="Topic"><input placeholder="Select Topic..." value={form.topic} onChange={e=>update("topic",e.target.value)}/></Field></div>
+ <div className="tpn-card"><div className="tpn-label">Note Summary</div><RichTextEditor value={form.note_summary} onChange={v=>update("note_summary",v)} placeholder="Write therapy progress note..."/><div className="tpn-label tpn-editor-title">Recommendation</div><RichTextEditor value={form.recommendation} onChange={v=>update("recommendation",v)} placeholder="Write recommendation..."/></div>
+ {selectedResidents.map(r=>{const a=form.resident_assessments[r.id]||emptyAssessment();return <div className="tpn-card tpn-assessment" key={r.id}><div className="tpn-resident-summary"><Info label="RESIDENT NAME" value={`${r.firstName||""} ${r.lastName||""}`}/><Info label="AHCCCS/MEMBER ID" value={r.ahcccsId||"—"}/><Info label="Diagnosis (specify if new or continuing)" value={r.diagnosis||"—"}/></div><Choice title="Resident Completed Therapy Session" options={["Yes","No"]} value={a.completedSession} set={v=>assess(r.id,"completedSession",v)}/><Choice title="Were there any treatment goals addressed?" options={["Yes","No"]} value={a.treatmentGoals} set={v=>assess(r.id,"treatmentGoals",v)}/><Choice title="Resident Participation" options={["100%","75%","50%","25%","None","Other"]} value={a.participation} set={v=>assess(r.id,"participation",v)}/>{a.participation==="Other"&&<Text value={a.participationOther} set={v=>assess(r.id,"participationOther",v)} placeholder="Other participation"/>}<Multi title="Resident Appearance" options={APPEARANCE} values={a.appearance} toggle={v=>toggleArray(r.id,"appearance",v)} other={a.appearanceOther} setOther={v=>assess(r.id,"appearanceOther",v)}/><Multi title="Resident Mood" options={MOOD} values={a.mood} toggle={v=>toggleArray(r.id,"mood",v)} other={a.moodOther} setOther={v=>assess(r.id,"moodOther",v)}/><Multi title="Resident Quality" options={QUALITY} values={a.quality} toggle={v=>toggleArray(r.id,"quality",v)} other={a.qualityOther} setOther={v=>assess(r.id,"qualityOther",v)}/><Multi title="Resident Progress" options={PROGRESS} values={a.progress} toggle={v=>toggleArray(r.id,"progress",v)} other={a.progressOther} setOther={v=>assess(r.id,"progressOther",v)}/><Field label="Resident Response"><input value={a.response} onChange={e=>assess(r.id,"response",e.target.value)}/></Field><Multi title="Goals addressed" options={GOALS} values={a.goals} toggle={v=>toggleArray(r.id,"goals",v)} other={a.goalsOther} setOther={v=>assess(r.id,"goalsOther",v)}/><Choice title="Any significant information not specified above?" options={["No","Yes"]} value={a.significantInfo} set={v=>assess(r.id,"significantInfo",v)}/>{a.significantInfo==="Yes"&&<Text value={a.significantDetails} set={v=>assess(r.id,"significantDetails",v)} placeholder="Enter significant information"/>}</div>})}
+ <div className="tpn-card"><h3>Signatures</h3><div className="tpn-grid tpn-grid-2"><Field label="BHT Name"><input value={form.bht_name} onChange={e=>update("bht_name",e.target.value)}/></Field><Field label="BHP Name"><input value={form.bhp_name} onChange={e=>update("bhp_name",e.target.value)}/></Field></div><div className="tpn-signature-grid"><div className="tpn-signature"><SignaturePad label="BHT Signature" value={form.bht_signature} onChange={v=>update("bht_signature",v)}/></div><div className="tpn-signature"><SignaturePad label="BHP Signature" value={form.bhp_signature} onChange={v=>update("bhp_signature",v)}/></div></div><label className="tpn-label tpn-signers">Signers<select multiple value={form.signer_ids} onChange={e=>update("signer_ids",Array.from(e.target.selectedOptions).map(o=>o.value))}>{profiles.map(p=><option key={p.id} value={p.id}>{p.full_name||p.id}{p.role?` — ${p.role}`:""}</option>)}</select><small>Hold Ctrl/Cmd to select multiple signers.</small></label></div>
+ {message&&<div className="tpn-message">{message}</div>}<div className="tpn-actions"><button type="button" className="tpn-btn tpn-btn-secondary" disabled={saving} onClick={()=>save("draft")}>Save as Draft</button><button type="button" className="tpn-btn" disabled={saving} onClick={()=>save("submitted")}>{saving?"Saving...":"SUBMIT"}</button></div></div>
 }
+function Check({label,checked,onChange}:{label:string;checked:boolean;onChange:(v:boolean)=>void}){return <label className="tpn-check"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)}/><span>{label}</span></label>}
+function Field({label,children}:{label:string;children:React.ReactNode}){return <label className="tpn-label">{label}{children}</label>}
+function Info({label,value}:{label:string;value:string}){return <div><small>{label} :</small><strong>{value}</strong></div>}
+function Choice({title,options,value,set}:{title:string;options:string[];value:string;set:(v:string)=>void}){return <div className="tpn-question"><b>{title}</b><div className="tpn-choice-row">{options.map(o=><label key={o}><input type="radio" checked={value===o} onChange={()=>set(o)}/>{o}</label>)}</div></div>}
+function Multi({title,options,values,toggle,other,setOther}:{title:string;options:string[];values:string[];toggle:(v:string)=>void;other:string;setOther:(v:string)=>void}){return <div className="tpn-question"><b>{title}</b><div className="tpn-choice-row">{options.map(o=><label key={o}><input type="checkbox" checked={values.includes(o)} onChange={()=>toggle(o)}/>{o}</label>)}<label><input type="checkbox" checked={!!other} onChange={e=>{if(!e.target.checked)setOther("")}}/>Other</label>{other!==""&&<input className="tpn-inline-other" value={other} onChange={e=>setOther(e.target.value)} placeholder="Other"/>}<button type="button" className="tpn-other-btn" onClick={()=>{if(!other)setOther(" ")}}>+ Other</button></div></div>}
+function Text({value,set,placeholder}:{value:string;set:(v:string)=>void;placeholder:string}){return <input className="tpn-assessment-input" value={value} onChange={e=>set(e.target.value)} placeholder={placeholder}/>}
